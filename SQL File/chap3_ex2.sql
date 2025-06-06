@@ -1,0 +1,162 @@
+-- PHÉP KẾT
+#1
+select 
+ORD.OrderNumber ,
+ORD.OrderDate,
+ORD.CustomerId,
+CONCAT(cus.firstname, ' ', cus.lastname) AS customer_name,
+ORD.TotalAmount 
+FROM orders ord inner join customers cus on ord.customerid = cus.id
+limit 10 ;
+
+#2
+select cus.*, 
+ORD.OrderNumber ,
+ORD.OrderDate,
+ORD.TotalAmount  
+FROM orders ord inner join customers cus on ord.customerid = cus.id
+where ord.TotalAmount = (select max(totalamount) from orders);
+
+#3
+SELECT ORD.CUSTOMERID ,CONCAT(cus.firstname, ' ', cus.lastname) AS customer_name, SUM(ORD.TOTALAMOUNT) AS TOTAL   
+FROM CUSTOMERS CUS INNER JOIN ORDERS ORD ON CUS.ID = ORD.CUSTOMERID
+GROUP BY CUSTOMERID
+ORDER BY TOTAL DESC
+LIMIT 10 ;
+
+#4
+SELECT PD.PRODUCTNAME,  SP.COMPANYNAME, SP.CONTACTNAME, SP.CITY
+FROM PRODUCTS PD INNER JOIN SUPPLIERS SP ON PD.SUPPLIERID = SP.ID  WHERE PD.PRODUCTNAME = "Boston Crab Meat"
+LIMIT 10 ;
+
+#5
+SELECT   SP.COMPANYNAME, COUNT(SP.COMPANYNAME) AS CNT_PRODUCT
+FROM PRODUCTS PD INNER JOIN SUPPLIERS SP ON PD.SUPPLIERID = SP.ID
+GROUP BY SP.COMPANYNAME
+ORDER BY CNT_PRODUCT DESC
+LIMIT 10 ;
+
+#6
+SELECT 
+ORD.OrderNumber,
+ORD.OrderDate,
+ORD.TotalAmount,
+ORD_IT.PRODUCTID,
+ORD_IT.QUANTITY,
+ORD_IT.UNITPRICE,
+ORD_IT.QUANTITY * ORD_IT.UNITPRICE AS MONEY,
+PD.PRODUCTNAME,
+CUS.FIRSTNAME,
+CUS.LASTNAME
+FROM ORDERS ORD
+INNER JOIN CUSTOMERS CUS ON ORD.CUSTOMERID= CUS.id
+INNER JOIN ORDERITEMS ORD_IT ON ORD.ID = ORD_IT.OrderID
+INNER JOIN PRODUCTS PD ON ORD_IT.ProductID = PD.ID
+ORDER BY ORDERNUMBER ASC, MONEY DESC
+LIMIT 10;
+
+#7
+SELECT 
+ORD.OrderNumber,
+ORD.OrderDate,
+ORD.TotalAmount,
+US.FIRSTNAME,
+CUS.LASTNAME
+	
+FROM ORDERS ORD
+INNER JOIN CUSTOMERS CUS ON ORD.CUSTOMERID= CUS.id
+WHERE CUS.COUNTRY = 'GERMANY'
+ORDER BY TOTALAMOUNT DESC	
+LIMIT 10;
+
+#8
+SELECT O1.*
+FROM ORDERS AS O1 JOIN  (SELECT MONTH(ORDERDATE) AS MONTH_ORDER, MAX(TOTALAMOUNT) AS MAX_TOTAL_AMOUNT
+						FROM ORDERS
+                        WHERE YEAR(ORDERDATE)=2012
+                        GROUP BY MONTH_ORDER
+					) AS O2 ON MONTH(O1.ORDERDATE) = O2.MONTH_ORDER
+			WHERE YEAR(O1.ORDERDATE) = 2012 AND O1.TOTALAMOUNT = O2.MAX_TOTAL_AMOUNT;
+
+#9
+SELECT ID, ORDERDATE, TOTALAMOUNT FROM ORDERS
+WHERE ORDERDATE >='2012-12-01' AND ORDERDATE <'2013-01-01'
+ORDER BY ID ASC;
+
+#10
+-- SELECT ID, ORDERDATE, TOTALAMOUNT, SUM(TOTALAMOUNT) OVER(ORDER BY ORDERDATE) AS ACCUMULATEDTOTAL FROM ORDERS
+-- WHERE ORDERDATE >='2012-12-01' AND ORDERDATE <'2013-01-01'
+-- ORDER BY ID ASC
+-- LIMIT 10; 
+select o1.Id, o1.OrderDate, o1.TotalAmount, sum(o2.TotalAmount) as AccumulatedTotal
+from orders as o1 join orders as o2 on o2.OrderDate between date_sub(o1.OrderDate, interval 7 day) and o1.OrderDate
+and date_format(o2.OrderDate, '%m-%Y') = '12-2012'
+where date_format(o1.OrderDate, '%m-%Y') = '12-2012'
+group by o1.Id, o1.OrderDate
+order by o1.Id, o1.OrderDate;
+
+#11
+SELECT ORDERNUMBER, ORDERDATE, TOTALAMOUNT, 
+avg(totalamount) over() as avg_total FROM ORDERS
+WHERE ORDERDATE >='2012-12-01' 
+AND ORDERDATE <'2013-01-01' 
+AND TOTALAMOUNT < (select distinct avg(totalamount) over() FROM ORDERS)
+ORDER BY ID ASC
+LIMIT 10;
+
+
+-- UNION
+#1 
+SELECT ORDERNUMBER, ORDERDATE, TOTALAMOUNT ,'MIN TOTAL AMOUNT' AS NOTE FROM ORDERS
+WHERE TOTALAMOUNT = (SELECT MIN(TOTALAMOUNT) FROM ORDERS )
+UNION
+SELECT ORDERNUMBER, ORDERDATE, TOTALAMOUNT ,'MAX TOTAL AMOUNT'  FROM ORDERS
+WHERE TOTALAMOUNT = (SELECT MAX(TOTALAMOUNT) FROM ORDERS );
+
+#2
+SELECT CONCAT(FIRSTNAME, ' ' , LASTNAME) AS NAME, CITY, COUNTRY, 'CUSTOMER' AS TYPE
+FROM CUSTOMERS WHERE CITY = 'PARIS'
+UNION 
+SELECT COMPANYNAME, CITY, COUNTRY, 'SUPPIER'
+FROM suppliers
+WHERE CITY = 'PARIS'
+;
+-- CTE
+WITH TOPORDER 
+AS (
+SELECT ORDERNUMBER,TOTALAMOUNT, CUSTOMERID
+FROM ORDERS
+ORDER BY TOTALAMOUNT DESC 
+
+)
+SELECT DISTINCT  COUNTRY FROM CUSTOMERS
+WHERE ID IN (SELECT CUSTOMERID FROM TOPORDER  )
+ORDER BY COUNTRY
+LIMIT 10 ;
+
+-- 2. Cho biết các quốc gia nằm trong danh sách 10 khách hàng có tổng các tổng tiền đặt lớn nhất
+with top_10_max_sum_total_amount as
+(
+	select CustomerId, sum(TotalAmount) as SumTotalAmount
+	from orders
+    group by CustomerId
+	order by SumTotalAmount desc
+	limit 10
+)
+select distinct Country
+from customers
+where Id in (select CustomerId from top_10_max_sum_total_amount)
+order by Country;
+
+
+-- VIEW
+#3
+create view vw_orders_max
+as select extract(month from orderdate) as month_order, sum(totalamount) as max_total
+from orders
+group by month_order;
+select * from vw_orders_max ;
+
+
+#4
+

@@ -1,0 +1,19 @@
+"""
+<html>
+<head>
+    <title>Sample Page</title>
+</head>
+<body>
+    <h1>Welcome to my website</h1>
+    <p>This is a paragraph of text.</p>
+    <ul>
+        <li>Item 1</li>
+        <li>Item 2</li>
+        <li>Item 3</li>
+    </ul>
+    <a id="ttth" href="https://csc.edu.vn">Trung tâm Tin học</a>
+    <a id="w3c" href="https://w3schools.com">W3Schools</a>
+    <img src='https://csc.edu.vn/template/frontend/images/logo.png'>
+</body>
+</html>
+"""
